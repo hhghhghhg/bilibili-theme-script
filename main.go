@@ -19,7 +19,6 @@ var flags bool
 func main() {
 	flags = true
 	var (
-		buff    [1024]byte
 		data    []byte
 		s       LoginStatus
 		msg     CheckLoginStatusResp
@@ -36,7 +35,7 @@ func main() {
 		if err != nil {
 			println("网络未连接或请求错误")
 		}
-		data = readAllByte(response, buff)
+		data = readAllByte(response)
 		if json.Unmarshal(data, &s) != nil {
 			println(" api json格式解析错误")
 			pause()
@@ -67,12 +66,12 @@ s:
 	println("请输入购买数量")
 	_, _ = fmt.Scanf("%s\n", &num)
 	resp, _ := http.Get("https://api.bilibili.com/x/garb/mall/item/suit/v2?item_id=" + itemId + "&part=suit")
-	_ = json.Unmarshal(readAllByte(resp, buff), &item)
+	_ = json.Unmarshal(readAllByte(resp), &item)
 	if item.Data.Item.ItemId == 0 {
 		println("商品不存在")
 		goto s
 	}
-	_ = json.Unmarshal(readAllByte(resp, buff), &item)
+	_ = json.Unmarshal(readAllByte(resp), &item)
 	parseInt, _ := strconv.ParseInt(item.Data.Item.Properties.SaleTimeBegin, 10, 64)
 	format := time.Unix(parseInt, 0).Format("2006-01-02 15:04:05")
 	println(item.Data.Item.Name + "商品开售时间：" + format)
@@ -130,26 +129,25 @@ func catchGrab(itemId string, crsf string, cookies string, num string) {
 
 func pay(data string, cookies string) {
 	var (
-		buff [1024]byte
-		req  payReq
-		res  payBpReq
+		req payReq
+		res payBpReq
 	)
 	c := &http.Client{}
 	request, _ := http.NewRequest("POST", "https://pay.bilibili.com/payplatform/pay/pay", strings.NewReader(toPayParam(data)))
 	request.Header.Add("content-type", "application/json")
 	request.Header.Add("cookie", cookies)
 	do, _ := c.Do(request)
-	_ = json.Unmarshal(readAllByte(do, buff), &req)
+	_ = json.Unmarshal(readAllByte(do), &req)
 	bpRequest, _ := http.NewRequest("POST", "https://pay.bilibili.com/paywallet/pay/payBp", strings.NewReader(req.Data.PayChannelParam))
 	bpRequest.Header.Add("content-type", "application/json")
 	bpRequest.Header.Add("cookie", cookies)
 	response, _ := c.Do(bpRequest)
-	_ = json.Unmarshal(readAllByte(response, buff), &res)
+	_ = json.Unmarshal(readAllByte(response), &res)
 	if res.Success {
 		flags = false
 		println("购买成功！！！")
 	}
-	println(string(readAllByte(response, buff)))
+	println(string(readAllByte(response)))
 }
 
 func toPayParam(data string) string {
@@ -169,7 +167,6 @@ func toPayParam(data string) string {
 }
 
 func confirm(id string, crsf string, cookies string) {
-	var buff [1024]byte
 	values := url.Values{}
 	values.Add("csrf", crsf)
 	values.Add("order_id", id)
@@ -182,7 +179,7 @@ func confirm(id string, crsf string, cookies string) {
 	request.Header.Add("cookie", cookies)
 	request.Header.Add("x-crsf-token", crsf)
 	do, _ := c.Do(request)
-	println("confirm:" + string(readAllByte(do, buff)))
+	println("confirm:" + string(readAllByte(do)))
 }
 func pause() {
 	var s string
@@ -223,8 +220,7 @@ func getPersonInfo(cookies string) personalInfo {
 	request, _ := http.NewRequest("GET", "https://api.bilibili.com/x/web-interface/nav", nil)
 	request.Header.Add("cookie", cookies)
 	do, _ := c.Do(request)
-	var buff [1024]byte
-	allByte := readAllByte(do, buff)
+	allByte := readAllByte(do)
 	var s personalInfo
 	json.Unmarshal(allByte, &s)
 	return s
@@ -238,9 +234,6 @@ func readCookiesFromFile() (string, error) {
 }
 
 func catch(itemId string, crsf string, cookis string, num string) []byte {
-	var (
-		buff [1024]byte
-	)
 	data := make([]byte, 0)
 	client := &http.Client{}
 	values := url.Values{}
@@ -258,13 +251,12 @@ func catch(itemId string, crsf string, cookis string, num string) []byte {
 	request.Header.Add("x-crsf-token", crsf)
 	//request.Header.Add("user-agent", "Mozilla/5.0 (Linux; Android 7.1.2; M2006J10C Build/N6F26Q; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/81.0.4044.117 Mobile Safari/537.36 os/android model/M2006J10C build/6580300 osVer/7.1.2 sdkInt/25 network/2 BiliApp/6580300 mobi_app/android channel/xiaomi_cn_tv.danmaku.bili_20190930 Buvid/XY8F46C80709C2AC8F13C26A1F4452AF1A37F sessionID/788ebcdd innerVer/6580310 c_locale/zh_CN s_locale/zh_CN disable_rcmd/0 6.58.0 os/android model/M2006J10C mobi_app/android build/6580300 channel/xiaomi_cn_tv.danmaku.bili_20190930 innerVer/6580310 osVer/7.1.2 network/2")
 	do, _ := client.Do(request)
-	data = readAllByte(do, buff)
+	data = readAllByte(do)
 	return data
 }
 
 func checkLoginStatus(s LoginStatus, msg *CheckLoginStatusResp) bool {
 	var (
-		buff [1024]byte
 		data []byte
 	)
 	form := "oauthKey=" + s.Data.OauthKey + "&gourl=https://passport.bilibili.com/account/security"
@@ -281,7 +273,7 @@ func checkLoginStatus(s LoginStatus, msg *CheckLoginStatusResp) bool {
 	if err != nil {
 		println("未知错误")
 	}
-	data = readAllByte(post, buff)
+	data = readAllByte(post)
 	err = json.Unmarshal(data, msg)
 	if err != nil {
 		return false
@@ -289,7 +281,8 @@ func checkLoginStatus(s LoginStatus, msg *CheckLoginStatusResp) bool {
 	return msg.Status
 }
 
-func readAllByte(get *http.Response, buff [1024]byte) []byte {
+func readAllByte(get *http.Response) []byte {
+	var buff [1024]byte
 	data := make([]byte, 0)
 	for true {
 		read, err := get.Body.Read(buff[:])
