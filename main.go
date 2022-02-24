@@ -119,6 +119,12 @@ func catchGrab(itemId string, crsf string, cookies string, num string) {
 			pause()
 			os.Exit(0)
 		}
+		if ord.Code == 26105{
+			println("该商品已售罄，看看其他商品吧~")
+			flags = false
+			pause()
+			os.Exit(0)
+		}
 		failCount++
 		if failCount == 10 {
 			time.Sleep(time.Duration(200) * time.Millisecond)
@@ -240,7 +246,7 @@ func catch(itemId string, crsf string, cookis string, num string) []byte {
 	values.Add("item_id", itemId)
 	values.Add("platform", "android")
 	values.Add("currency", "bp")
-	values.Add("add_month", "1")
+	values.Add("add_month", "-1")
 	values.Add("buy_num", num)
 	values.Add("coupon_token", "")
 	values.Add("hasBiliapp", "true")
